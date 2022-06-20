@@ -75,7 +75,6 @@ class ExampleTrainingJob(TrainingJob):
     ) -> tuple[t.Tensor, t.Tensor]:
         return self.get_loss_and_y_pred(model, batch, F.mse_loss)
 
-    # Interface to stopping condition
     def stop_condition(self, hyperparams: Hyperparams, epoch: int, all_metrics: list[dict[str, object]]) -> bool:
         if hyperparams.n_epochs == epoch:
             return True

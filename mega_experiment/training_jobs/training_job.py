@@ -1,12 +1,5 @@
-# Metadata thoughts and questions:
-# - What should the two metadata objects be like?
-#   - One for the training job, another for each init
-#   - Mainitaining typing between the two, so the user only has to define it once (should probably be defined on the init metadata, and then the training job class comes from that)
-# - Should there be different metadata used to construct the model for torchscripting? Should the model just be torchscripted on each init?
-
 from dataclasses import dataclass, fields, make_dataclass
 from datetime import datetime
-from pathlib import Path
 import subprocess
 import torch as t
 import torch.nn.functional as F
@@ -16,9 +9,10 @@ from typing import Optional, Union, TypeVar
 
 # All methods on this class are overwriteable by subclasses! In fact, subclasses are
 # encouraged to overwrite these methods to suit their needs.
-
-
 class TrainingJob:
+    def __init__(self, settings: Optional["TrainingJobSettings"] = None):
+        self.settings = TrainingJobSettings() if settings is None else settings
+
     def model(self, hyperparams: "HyperparamsBase") -> t.nn.Module:
         raise NotImplementedError("Subclasses should implement this method.")
 
@@ -93,6 +87,10 @@ def create_job_hyperparams_class(hyperparams_class: type):
     """
     enhance_type = lambda type_: Union[type_, HyperparamOptions[type_]]
     job_hyperparams_class_fields = [
-        (field.name, enhance_type(field.type), field) for field in fields(hyperparams_class)
+        (field.name, enhance_type(field.type), field)
+        for field in fields(hyperparams_class)
+        if field.name != "instance_id"
     ]
-    return make_dataclass("JobHyperparams", job_hyperparams_class_fields)
+    job_hyperparams_class = make_dataclass("JobHyperparams", job_hyperparams_class_fields)
+    job_hyperparams_class.hyperparams_class = hyperparams_class
+    return job_hyperparams_class
