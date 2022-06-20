@@ -1,11 +1,3 @@
-# In charge of:
-# - Saving hyperparams
-# - Tracing and saving the model
-# - Training the model
-# - Saving the params, metrics, val outputs and such while training
-# - Saving to GCP
-# - Reporting progress in the console??
-
 from dataclasses import asdict
 from itertools import count
 from typing import Optional
@@ -14,6 +6,14 @@ import json
 import os
 from pathlib import Path
 import torch as t
+
+# In charge of:
+# - Saving hyperparams
+# - Tracing and saving the model
+# - Training the model
+# - Saving the params, metrics, and such while training
+# - Saving to GCP?
+# - Reporting progress in the console??
 
 
 class InstanceRunner:
@@ -51,9 +51,8 @@ class InstanceRunner:
     def train(self, model: t.nn.Module):
 
         # Set up callbacks
-        # TODO: get run condition values from training job settings
-        metrics = SaveMetrics(1, None, self.output_dir)
-        parameters = SaveParameters(1, 100, self.output_dir)
+        metrics = SaveMetrics(*self.training_job.settings.save_metrics_every, self.output_dir)
+        parameters = SaveParameters(*self.training_job.settings.save_parameters_every, self.output_dir)
         callbacks = Callbacks(metrics, parameters)
 
         # Set up data loaders, model, and optimizer
@@ -64,7 +63,7 @@ class InstanceRunner:
 
         for epoch in count():  # Counts up from 0 indefinitely
 
-            # Check traning stop condition
+            # Check training stop condition
             if self.training_job.stop_condition(self.hyperparams, epoch, metrics.stored_metrics):
                 return
 
