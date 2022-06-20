@@ -39,7 +39,7 @@ class InstanceRunner:
         os.makedirs(self.output_dir, exist_ok=True)
 
         # Save hyperparams
-        with open(self.job_output_dir / "instance_metadata.jsonl", "a") as f:
+        with open(self.job_output_dir / "instance_hyperparams.jsonl", "a") as f:
             f.write(json.dumps(asdict(self.hyperparams)) + "\n")
 
         # Trace and save model

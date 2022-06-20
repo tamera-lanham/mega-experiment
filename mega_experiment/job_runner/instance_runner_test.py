@@ -17,7 +17,7 @@ def test_pre_training_setup():
 
     assert (instance_runner.output_dir).is_dir()
     assert (instance_runner.output_dir / "model_torchscript.pt").is_file()
-    assert (base_output_dir / "instance_metadata.jsonl").is_file()
+    assert (base_output_dir / "instance_hyperparams.jsonl").is_file()
 
     shutil.rmtree(base_output_dir)
 

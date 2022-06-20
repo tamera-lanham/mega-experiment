@@ -51,7 +51,7 @@ class TrainingJob:
 class TrainingJobSettings:
     job_type: str = "TrainingJob"
     job_description: str = ""
-    n_init_repeats: int = 1
+    n_instance_repeats: int = 1
     gcs_bucket: Optional[str] = None
     n_processes: int = 4
     output_dirname: str = ""
