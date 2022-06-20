@@ -77,6 +77,8 @@ class InstanceRunner:
 
                 callbacks.run_callbacks(model, epoch, i, X, y, y_pred, loss, False)
 
+            callbacks.run_callbacks(model, epoch, None, X, y, y_pred, loss, False)
+
             # Validation phase
             for i, (X, y) in enumerate(val_loader):
                 X.to(self.device), y.to(self.device)
@@ -103,11 +105,15 @@ class Callback:
         self.every_n_batches = every_n_batches
         self.output_dir = output_dir
 
-    def run_condition(self, epoch, batch_index, validation=False):
-        # TODO: Handle case where self.every_n_batches is None appropriately (likely requires SaveMetrics refactor)
-        if self.every_n_batches and batch_index and batch_index % self.every_n_batches == 0:
-            return True
-        if self.every_n_epochs and not batch_index and epoch % self.every_n_epochs == 0:
+    def run_condition(self, epoch: int, batch_index: Optional[int], validation=False):
+        # batch_index == None indicates the end of the batch
+
+        if self.every_n_batches:
+            if batch_index is not None and batch_index % self.every_n_batches == 0:
+                return True
+            return False
+
+        if batch_index is None and epoch % self.every_n_epochs == 0 and validation:
             return True
         return False
 
@@ -152,7 +158,22 @@ class SaveParameters(Callback):
 class SaveMetrics(Callback):
     def __init__(self, every_n_epochs: int, every_n_batches: Optional[int], output_dir: Optional[Path] = None):
         super().__init__(every_n_epochs, every_n_batches, output_dir)
+        self.current_metrics = {}
         self.stored_metrics = []
+
+    def run_condition(self, epoch: int, batch_index: Optional[int], validation=False):
+        if validation:
+            return True
+
+        if self.every_n_batches:
+            if batch_index is not None and batch_index % self.every_n_batches == 0:  # in the train loop
+                return True
+            return False
+
+        if epoch % self.every_n_epochs == 0:
+            if batch_index is None and not validation:
+                return True
+        return False
 
     def run(
         self,
@@ -167,8 +188,15 @@ class SaveMetrics(Callback):
     ) -> None:
         raw_metrics = self.calculate_metrics(model, X, y, y_pred, loss)
         metrics = self.combine_metrics(raw_metrics, epoch, batch_index, validation)
+
         self.stored_metrics.append(metrics)
-        self.write_metrics(metrics)
+
+        if not self.every_n_batches and epoch % self.every_n_epochs == 0 and validation:
+            self.stored_metrics[-1] = metrics
+            self.write_metrics(metrics)
+
+        if self.every_n_batches:
+            self.write_metrics(metrics)
 
     def calculate_metrics(self, model, X, y, y_pred, loss) -> dict[str, float]:
         # User-defined metrics called from here (if any)

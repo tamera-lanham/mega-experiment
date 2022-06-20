@@ -4,11 +4,11 @@ from mega_experiment.job_runner.job_runner import JobRunner
 
 if __name__ == "__main__":
     settings = TrainingJobSettings(
-        **{
-            "job_type": "ExampleTrainingJob",
-            "job_description": "Example training job for demo and testing purposes",
-            "n_instance_repeats": 2,
-        }
+        job_type="ExampleTrainingJob",
+        job_description="Example training job for demo and testing purposes",
+        n_instance_repeats=2,
+        save_parameters_every=(1, 250),
+        save_metrics_every=(1, 250),
     )
 
     job_hyperparams = JobHyperparams(
@@ -16,7 +16,7 @@ if __name__ == "__main__":
             "n_inputs": HyperparamOptions([8, 16, 32]),
             "batch_size": 32,
             "n_batches": 500,
-            "n_epochs": 5,
+            "n_epochs": 10,
             "lr": HyperparamOptions([1e-3, 1e-5]),
         }
     )

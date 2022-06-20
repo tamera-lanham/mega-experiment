@@ -16,6 +16,8 @@ class JobRunner:
         self.job_ouput_dir = Path("outputs") / self.settings.output_dirname
 
     def run(self, job_hyperparams: object):
+        # job_hyperparams is an arg here and not on __init__ for pickleability reasons
+
         self.save_settings_and_job_hyperparams(job_hyperparams)
 
         with Pool(self.settings.n_processes) as p:
