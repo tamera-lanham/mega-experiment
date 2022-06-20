@@ -3,7 +3,7 @@ from itertools import product
 import json
 import os
 from mega_experiment.job_runner.instance_runner import InstanceRunner
-from mega_experiment.training_jobs.training_job import HyperparamOptions, HyperparamsBase, TrainingJob
+from mega_experiment.job_runner.training_job import HyperparamOptions, HyperparamsBase, TrainingJob
 from pathlib import Path
 from typing import Iterable, Type
 from multiprocessing import Pool

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from inspect import Parameter
 from pyexpat import model
-from mega_experiment.training_jobs.training_job import (
+from mega_experiment.job_runner.training_job import (
     TrainingJob,
     create_job_hyperparams_class,
     HyperparamsBase,

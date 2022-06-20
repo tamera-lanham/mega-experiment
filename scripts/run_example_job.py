@@ -1,5 +1,5 @@
 from mega_experiment.training_jobs.example_training_job import *
-from mega_experiment.training_jobs.training_job import HyperparamOptions, TrainingJobSettings
+from mega_experiment.job_runner.training_job import HyperparamOptions, TrainingJobSettings
 from mega_experiment.job_runner.job_runner import JobRunner
 
 if __name__ == "__main__":

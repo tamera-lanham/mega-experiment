@@ -9,7 +9,7 @@
 from dataclasses import asdict
 from itertools import count
 from typing import Optional
-from mega_experiment.training_jobs.training_job import TrainingJob, HyperparamsBase
+from mega_experiment.job_runner.training_job import TrainingJob, HyperparamsBase
 import json
 import os
 from pathlib import Path
