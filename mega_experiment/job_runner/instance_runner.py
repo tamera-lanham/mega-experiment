@@ -22,7 +22,7 @@ class InstanceRunner:
         training_job: TrainingJob,
         hyperparams: HyperparamsBase,
         job_output_dir: Path,
-        device: t.device,
+        device: Optional[t.device] = None,
     ):
         self.training_job = training_job
         self.hyperparams = hyperparams
@@ -51,6 +51,7 @@ class InstanceRunner:
     def train(self, model: t.nn.Module):
 
         # Set up callbacks
+        # TODO: get run condition values from training job settings
         metrics = SaveMetrics(1, None, self.output_dir)
         parameters = SaveParameters(1, 100, self.output_dir)
         callbacks = Callbacks(metrics, parameters)
