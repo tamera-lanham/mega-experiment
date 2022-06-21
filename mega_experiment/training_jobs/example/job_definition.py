@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader
 from typing import Optional
 from mega_experiment.datasets import IdentityDataset
 
+
 @dataclass
 class Hyperparams(HyperparamsBase):
     n_inputs: int = 16
@@ -19,7 +20,8 @@ class Hyperparams(HyperparamsBase):
     n_epochs: int = 5
     lr: float = 1e-3
 
-JobHyperparams = create_job_hyperparams_class(Hyperparams) # Please keep this line in your training job definition!
+
+JobHyperparams = create_job_hyperparams_class(Hyperparams)  # Please keep this line in your training job definition!
 
 
 class ExampleTrainingJob(TrainingJob):

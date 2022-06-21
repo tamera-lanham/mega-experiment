@@ -1,4 +1,4 @@
-from mega_experiment.training_jobs.example_training_job import *
+from mega_experiment.training_jobs.example.job_definition import *
 from mega_experiment.job_runner.training_job import HyperparamOptions, TrainingJobSettings
 from mega_experiment.job_runner.job_runner import JobRunner
 
@@ -18,5 +18,5 @@ if __name__ == "__main__":
         lr=HyperparamOptions([1e-3, 1e-5]),
     )
 
-    training_job = ExampleTrainingJob(settings)
-    job_runner = JobRunner(training_job).run(job_hyperparams)
+    job = ExampleTrainingJob(settings)
+    job_runner = JobRunner(job).run(job_hyperparams)

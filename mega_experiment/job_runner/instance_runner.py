@@ -152,11 +152,13 @@ class SaveParameters(Callback):
         if validation or batch_index is None:
             return False
 
-        if batch_index % self.every_n_batches == 0:
-            return True
-
         if not self.every_n_batches and batch_index == 0:
             return True
+
+        if self.every_n_batches and batch_index % self.every_n_batches == 0:
+            return True
+
+
 
         return False
 
@@ -224,10 +226,11 @@ class SaveMetrics(Callback):
         prefix = "val_" if validation else "train_"
         metrics_prefixed = {prefix + key: value for key, value in metrics.items()}
         new_metrics = {
-            **self.most_recent_metrics(),
-            **metrics_prefixed,
             "epoch": epoch,
             "batch": "end" if batch_index is None else batch_index,
+            **self.most_recent_metrics(),
+            **metrics_prefixed,
+
         }
         return new_metrics
 

@@ -1,6 +1,6 @@
 import json
 from mega_experiment.job_runner.instance_runner import *
-from mega_experiment.training_jobs.example_training_job import ExampleTrainingJob, Hyperparams
+from mega_experiment.training_jobs.example.job_definition import ExampleTrainingJob, Hyperparams
 from pathlib import Path
 import shutil
 import torch as t
