@@ -69,13 +69,8 @@ class CifarDoubleDescentJob(TrainingJob):
     def optimizer(self, hyperparams: Hyperparams, model: t.nn.Module) -> t.optim.Optimizer:
         return t.optim.SGD(model.parameters(), lr=hyperparams.lr)
 
-    def train_step(
-        self,
-        hyperparams: Hyperparams,
-        model: t.nn.Module,
-        batch: tuple[t.Tensor, t.Tensor],
-    ) -> tuple[t.Tensor, t.Tensor]:
-        return self.get_loss_and_y_pred(model, batch, F.cross_entropy)
+    def loss_function(self, hyperparams: Hyperparams):
+        return F.cross_entropy
 
     def stop_condition(self, hyperparams: Hyperparams, epoch: int, all_metrics: list[dict[str, object]]) -> bool:
         if hyperparams.n_epochs == epoch:

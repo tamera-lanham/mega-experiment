@@ -8,6 +8,7 @@ if __name__ == "__main__":
         job_description="Deep double descent replication using ResNet on CIFAR-10",
         n_instance_repeats=5,
         save_parameters_every_n_batches=None,
+        n_processes=4
     )
 
     job_hyperparams = JobHyperparams(n_epochs=5, label_noise=0.2, batch_size=128, resnet_width=64)

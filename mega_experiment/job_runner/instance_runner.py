@@ -58,10 +58,11 @@ class InstanceRunner:
         parameters = SaveParameters(self.training_job.settings.save_parameters_every_n_batches, self.output_dir)
         callbacks = Callbacks(metrics, parameters)
 
-        # Set up data loaders, model, and optimizer
+        # Set up data loaders, model, loss function, and optimizer
         train_loader, val_loader = self.training_job.data_loaders(self.hyperparams)
         val_loader = [] if val_loader is None else val_loader
         model.to(self.device)
+        loss_fn = self.training_job.loss_function(self.hyperparams)
         optimizer = self.training_job.optimizer(self.hyperparams, model)
 
         progress_bar = tqdm(
@@ -82,7 +83,8 @@ class InstanceRunner:
                 X = X.to(self.device)
                 y = y.to(self.device)
                 optimizer.zero_grad()
-                train_loss, y_pred = self.training_job.train_step(self.hyperparams, model, (X, y))
+                y_pred = model(X)
+                train_loss = loss_fn(y_pred, y)
                 train_loss.backward()
                 optimizer.step()
 
@@ -96,7 +98,8 @@ class InstanceRunner:
                 y = y.to(self.device)
                 with t.no_grad():
                     # TODO: don't throw away all the val data maybe??
-                    val_loss, y_pred = self.training_job.validation_step(self.hyperparams, model, (X, y))
+                    y_pred = model(X)
+                    val_loss = loss_fn(y_pred, y)
 
             callbacks.run_callbacks(model, epoch, None, X, y, y_pred, val_loss, True)
 
@@ -157,8 +160,6 @@ class SaveParameters(Callback):
 
         if self.every_n_batches and batch_index % self.every_n_batches == 0:
             return True
-
-
 
         return False
 
@@ -230,7 +231,6 @@ class SaveMetrics(Callback):
             "batch": "end" if batch_index is None else batch_index,
             **self.most_recent_metrics(),
             **metrics_prefixed,
-
         }
         return new_metrics
 

@@ -8,6 +8,7 @@ if __name__ == "__main__":
         job_description="Example training job for demo and testing purposes",
         n_instance_repeats=5,
         save_parameters_every_n_batches=250,
+        n_processes=4,
     )
 
     job_hyperparams = JobHyperparams(

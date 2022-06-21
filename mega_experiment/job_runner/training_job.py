@@ -4,11 +4,11 @@ import subprocess
 import torch as t
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from typing import Optional, Union, TypeVar
+from typing import Callable, Optional, Union, TypeVar
 
 
-# All methods on this class are overwriteable by subclasses! In fact, subclasses are
-# encouraged to overwrite these methods to suit their needs.
+# All methods on this class are overwriteable by subclasses! In fact, subclasses are encouraged to overwrite 
+# these methods to suit their needs.
 class TrainingJob:
     def __init__(self, settings: Optional["TrainingJobSettings"] = None):
         self.settings = TrainingJobSettings() if settings is None else settings
@@ -20,31 +20,10 @@ class TrainingJob:
         raise NotImplementedError("Subclasses should implement this method.")
 
     def optimizer(self, hyperparams: "HyperparamsBase", model: t.nn.Module) -> t.optim.Optimizer:
-        return t.optim.SGD(model.parameters())
+        return t.optim.SGD(model.parameters(), lr=1e-3)
 
-    def get_loss_and_y_pred(
-        self, model: t.nn.Module, batch: tuple[t.Tensor, t.Tensor], loss_fn: callable
-    ) -> tuple[t.Tensor, t.Tensor]:
-        X, y = batch
-        y_pred = model(X)
-        loss = loss_fn(y_pred, y)
-        return loss, y_pred
-
-    def train_step(
-        self,
-        hyperparams: "HyperparamsBase",
-        model: t.nn.Module,
-        batch: tuple[t.Tensor, t.Tensor],
-    ) -> tuple[t.Tensor, t.Tensor]:
-        return self.get_loss_and_y_pred(model, batch, F.cross_entropy)
-
-    def validation_step(
-        self,
-        hyperparams: "HyperparamsBase",
-        model: t.nn.Module,
-        batch: tuple[t.Tensor, t.Tensor],
-    ) -> tuple[t.Tensor, t.Tensor]:
-        return self.train_step(hyperparams, model, batch)
+    def loss_function(self, hyperparams: "HyperparamsBase"):
+        return F.cross_entropy
 
 
 @dataclass
