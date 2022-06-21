@@ -2,11 +2,13 @@ from dataclasses import asdict
 from itertools import product
 import json
 import os
+from math import prod
 from mega_experiment.job_runner.instance_runner import InstanceRunner
 from mega_experiment.job_runner.training_job import HyperparamOptions, HyperparamsBase, TrainingJob
 from pathlib import Path
-from typing import Iterable, Type
-from multiprocessing import Pool
+import torch as t
+from typing import Iterable, Optional, Type
+import multiprocessing
 
 
 class JobRunner:
@@ -14,13 +16,16 @@ class JobRunner:
         self.training_job = training_job
         self.settings = self.training_job.settings
         self.job_ouput_dir = Path("outputs") / self.settings.output_dirname
+        self.n_instances = None
+        self.gpus = t.cuda.device_count()
 
     def run(self, job_hyperparams: object):
         # job_hyperparams is an arg here and not on __init__ for pickleability reasons
 
         self.save_settings_and_job_hyperparams(job_hyperparams)
 
-        with Pool(self.settings.n_processes) as p:
+        multiprocessing.set_start_method("spawn")
+        with multiprocessing.Pool(self.settings.n_processes) as p:
             print(p.map(self.run_instance, self.generate_instance_hyperparams(job_hyperparams)))
 
     def save_settings_and_job_hyperparams(self, job_hyperparams):
@@ -30,8 +35,10 @@ class JobRunner:
         with open(self.job_ouput_dir / "job_hyperparams.json", "w") as f:
             json.dump(asdict(job_hyperparams), f)
 
-    def run_instance(self, hyperparams):
-        instance_runner = InstanceRunner(self.training_job, hyperparams, self.job_ouput_dir)
+    def run_instance(self, hyperparams: HyperparamsBase):
+        device = self.choose_device(hyperparams)
+        print(f"running instance {hyperparams.instance_id}")
+        instance_runner = InstanceRunner(self.training_job, hyperparams, self.job_ouput_dir, device)
         instance_runner.run()
 
     def generate_instance_hyperparams(self, job_hyperparams) -> Iterable[HyperparamsBase]:
@@ -39,6 +46,7 @@ class JobRunner:
         hyperparams_with_options = {
             k: v for k, v in asdict(job_hyperparams).items() if isinstance(v, HyperparamOptions)
         }
+        self.n_instances = self.settings.n_instance_repeats * prod(len(v) for v in hyperparams_with_options.values())
         as_tuples = [[(label, value) for value in options] for label, options in hyperparams_with_options.items()]
         instance_hyperparam_values = (
             {**asdict(job_hyperparams), **dict(hyperparam_values)} for hyperparam_values in product(*as_tuples)
@@ -49,3 +57,9 @@ class JobRunner:
             for _ in range(self.settings.n_instance_repeats):
                 yield job_hyperparams.hyperparams_class(instance_id=i, **instance_hyperparams)
                 i += 1
+
+    def choose_device(self, hyperparams: HyperparamsBase) -> Optional[t.device]:
+        if not self.gpus:
+            return None
+        gpu_index = hyperparams.instance_id % self.gpus
+        return t.device(f"cuda:{gpu_index}")
