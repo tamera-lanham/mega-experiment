@@ -1,6 +1,4 @@
 from dataclasses import dataclass
-from inspect import Parameter
-from pyexpat import model
 from mega_experiment.job_runner.training_job import (
     TrainingJob,
     create_job_hyperparams_class,
@@ -9,9 +7,9 @@ from mega_experiment.job_runner.training_job import (
 import torch as t
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, Dataset
-from typing import Iterable, Optional, Union
-
+from torch.utils.data import DataLoader
+from typing import Optional
+from mega_experiment.datasets import IdentityDataset
 
 @dataclass
 class Hyperparams(HyperparamsBase):
@@ -21,20 +19,7 @@ class Hyperparams(HyperparamsBase):
     n_epochs: int = 5
     lr: float = 1e-3
 
-
-JobHyperparams = create_job_hyperparams_class(Hyperparams)
-
-
-class IdentityDataset(Dataset):
-    def __init__(self, shape, n_batches):
-        self.data = [t.randn(shape) for _ in range(n_batches)]
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        X = self.data[idx]
-        return (X, X)
+JobHyperparams = create_job_hyperparams_class(Hyperparams) # Please keep this line in your training job definition!
 
 
 class ExampleTrainingJob(TrainingJob):
