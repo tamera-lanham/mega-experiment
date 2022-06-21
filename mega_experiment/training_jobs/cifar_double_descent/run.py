@@ -6,12 +6,12 @@ if __name__ == "__main__":
     settings = TrainingJobSettings(
         job_type="CifarDoubleDescent",
         job_description="Deep double descent replication using ResNet on CIFAR-10",
-        n_instance_repeats=5,
+        n_instance_repeats=32,
         save_parameters_every_n_batches=None,
-        n_processes=4
+        n_processes=16
     )
 
-    job_hyperparams = JobHyperparams(n_epochs=5, label_noise=0.2, batch_size=128, resnet_width=64)
+    job_hyperparams = JobHyperparams(n_epochs=1000, label_noise=0.2, batch_size=128, resnet_width=64)
 
     job = CifarDoubleDescentJob(settings)
     job_runner = JobRunner(job).run(job_hyperparams)

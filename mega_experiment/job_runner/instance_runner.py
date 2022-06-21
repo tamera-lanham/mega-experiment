@@ -85,6 +85,7 @@ class InstanceRunner:
                 optimizer.zero_grad()
                 y_pred = model(X)
                 train_loss = loss_fn(y_pred, y)
+                if t.cuda.is_available: gpu_mem_usage = t.cuda.memory_allocated(self.device) 
                 train_loss.backward()
                 optimizer.step()
 
@@ -107,7 +108,7 @@ class InstanceRunner:
             if t.cuda.is_available():
                 postfix = {
                     **postfix,
-                    "gpu memory usage (GiB)": t.cuda.memory_allocated(self.device) / 2**30,
+                    "gpu memory usage (GiB)": gpu_mem_usage / 2**30,
                     "gpu utilization %": t.cuda.utilization(self.device),
                 }
             progress_bar.set_postfix(postfix)
@@ -227,10 +228,10 @@ class SaveMetrics(Callback):
         prefix = "val_" if validation else "train_"
         metrics_prefixed = {prefix + key: value for key, value in metrics.items()}
         new_metrics = {
-            "epoch": epoch,
-            "batch": "end" if batch_index is None else batch_index,
             **self.most_recent_metrics(),
             **metrics_prefixed,
+            "epoch": epoch,
+            "batch": "end" if batch_index is None else batch_index,
         }
         return new_metrics
 
