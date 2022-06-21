@@ -69,7 +69,8 @@ class InstanceRunner:
 
             # Training phase
             for i, (X, y) in enumerate(train_loader):
-                X.to(self.device), y.to(self.device)
+                X = X.to(self.device)
+                y = y.to(self.device)
                 optimizer.zero_grad()
                 loss, y_pred = self.training_job.train_step(self.hyperparams, model, (X, y))
                 loss.backward()
@@ -81,7 +82,8 @@ class InstanceRunner:
 
             # Validation phase
             for i, (X, y) in enumerate(val_loader):
-                X.to(self.device), y.to(self.device)
+                X = X.to(self.device)
+                y = y.to(self.device)
                 with t.no_grad():
                     # TODO: don't throw away all the val data maybe??
                     loss, y_pred = self.training_job.validation_step(self.hyperparams, model, (X, y))
