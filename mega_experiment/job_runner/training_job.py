@@ -52,8 +52,7 @@ class TrainingJobSettings:
     job_type: str = "TrainingJob"
     job_description: str = ""
     n_instance_repeats: int = 1
-    save_metrics_every: tuple[int, Optional[int]] = (1, None)  # n_epochs, n_batches
-    save_parameters_every: tuple[int, Optional[int]] = (1, None)  # n_epochs, n_batches
+    save_parameters_every_n_batches: Optional[int] = (None,)  # None means every epoch
     n_processes: int = 4
     output_dirname: str = ""
     most_recent_commit_hash: str = ""

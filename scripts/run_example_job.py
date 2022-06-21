@@ -7,20 +7,16 @@ if __name__ == "__main__":
         job_type="ExampleTrainingJob",
         job_description="Example training job for demo and testing purposes",
         n_instance_repeats=5,
-        save_parameters_every=(1, 250),
-        save_metrics_every=(1, 250),
+        save_parameters_every_n_batches=250,
     )
 
     job_hyperparams = JobHyperparams(
-        **{
-            "n_inputs": HyperparamOptions([8, 16, 32]),
-            "batch_size": 32,
-            "n_batches": 500,
-            "n_epochs": 10,
-            "lr": HyperparamOptions([1e-3, 1e-5]),
-        }
+        n_inputs=HyperparamOptions([8, 16, 32]),
+        batch_size=32,
+        n_batches=500,
+        n_epochs=10,
+        lr=HyperparamOptions([1e-3, 1e-5]),
     )
 
     training_job = ExampleTrainingJob(settings)
-    job_runner = JobRunner(training_job)
-    job_runner.run(job_hyperparams)
+    job_runner = JobRunner(training_job).run(job_hyperparams)

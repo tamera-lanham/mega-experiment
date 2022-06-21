@@ -32,7 +32,7 @@ class JobRunner:
             hyperparams_generator,
             max_workers=self.settings.n_processes,
             total=n_instances,
-            desc="Job progress",
+            desc= f"{self.settings.output_dirname} progress",
             unit="instance",
             position=self.settings.n_processes + 2,
         )
