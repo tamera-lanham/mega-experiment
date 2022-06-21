@@ -7,7 +7,8 @@ from mega_experiment.job_runner.instance_runner import InstanceRunner
 from mega_experiment.job_runner.training_job import HyperparamOptions, HyperparamsBase, TrainingJob
 from pathlib import Path
 import torch as t
-from typing import Iterable, Optional, Type
+from tqdm.contrib.concurrent import process_map
+from typing import Iterable, Optional
 import multiprocessing
 
 
@@ -16,17 +17,25 @@ class JobRunner:
         self.training_job = training_job
         self.settings = self.training_job.settings
         self.job_ouput_dir = Path("outputs") / self.settings.output_dirname
-        self.n_instances = None
         self.gpus = t.cuda.device_count()
 
     def run(self, job_hyperparams: object):
         # job_hyperparams is an arg here and not on __init__ for pickleability reasons
 
         self.save_settings_and_job_hyperparams(job_hyperparams)
+        n_instances = self.get_n_instances(job_hyperparams)
+        hyperparams_generator = self.generate_instance_hyperparams(job_hyperparams)
 
         multiprocessing.set_start_method("spawn")
-        with multiprocessing.Pool(self.settings.n_processes) as p:
-            print(p.map(self.run_instance, self.generate_instance_hyperparams(job_hyperparams)))
+        process_map(  # This is tqdm's version of multiprocessing.map, which also creates a progress bar
+            self.run_instance,
+            hyperparams_generator,
+            max_workers=self.settings.n_processes,
+            total=n_instances,
+            desc="Job progress",
+            unit="instance",
+            position=self.settings.n_processes + 2,
+        )
 
     def save_settings_and_job_hyperparams(self, job_hyperparams):
         os.makedirs(self.job_ouput_dir)
@@ -36,17 +45,20 @@ class JobRunner:
             json.dump(asdict(job_hyperparams), f)
 
     def run_instance(self, hyperparams: HyperparamsBase):
-        device = self.choose_device(hyperparams)
-        print(f"running instance {hyperparams.instance_id}")
-        instance_runner = InstanceRunner(self.training_job, hyperparams, self.job_ouput_dir, device)
+        process_num = int(multiprocessing.current_process().name.split("-")[-1])
+        device = self.choose_device(process_num)
+        instance_runner = InstanceRunner(self.training_job, hyperparams, self.job_ouput_dir, device, process_num)
         instance_runner.run()
+
+    def get_n_instances(self, job_hyperparams) -> int:
+        option_counts = [len(v) for v in asdict(job_hyperparams).values() if isinstance(v, HyperparamOptions)]
+        return self.settings.n_instance_repeats * prod(option_counts)
 
     def generate_instance_hyperparams(self, job_hyperparams) -> Iterable[HyperparamsBase]:
 
         hyperparams_with_options = {
             k: v for k, v in asdict(job_hyperparams).items() if isinstance(v, HyperparamOptions)
         }
-        self.n_instances = self.settings.n_instance_repeats * prod(len(v) for v in hyperparams_with_options.values())
         as_tuples = [[(label, value) for value in options] for label, options in hyperparams_with_options.items()]
         instance_hyperparam_values = (
             {**asdict(job_hyperparams), **dict(hyperparam_values)} for hyperparam_values in product(*as_tuples)
@@ -58,8 +70,8 @@ class JobRunner:
                 yield job_hyperparams.hyperparams_class(instance_id=i, **instance_hyperparams)
                 i += 1
 
-    def choose_device(self, hyperparams: HyperparamsBase) -> Optional[t.device]:
+    def choose_device(self, process_num) -> Optional[t.device]:
         if not self.gpus:
             return None
-        gpu_index = hyperparams.instance_id % self.gpus
+        gpu_index = process_num % self.gpus
         return t.device(f"cuda:{gpu_index}")

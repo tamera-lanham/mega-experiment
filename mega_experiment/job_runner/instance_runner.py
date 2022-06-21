@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import torch as t
+from tqdm import tqdm
 
 # In charge of:
 # - Saving hyperparams
@@ -13,7 +14,6 @@ import torch as t
 # - Training the model
 # - Saving the params, metrics, and such while training
 # - Saving to GCP?
-# - Reporting progress in the console??
 
 
 class InstanceRunner:
@@ -23,12 +23,14 @@ class InstanceRunner:
         hyperparams: HyperparamsBase,
         job_output_dir: Path,
         device: Optional[t.device] = None,
+        process_num: Optional[int] = None,
     ):
         self.training_job = training_job
         self.hyperparams = hyperparams
         self.job_output_dir = job_output_dir
         self.output_dir = job_output_dir / "instances" / str(self.hyperparams.instance_id)
         self.device = device
+        self.process_num = process_num
 
     def run(self):
         model = self.pre_training_setup()
@@ -61,8 +63,15 @@ class InstanceRunner:
         model.to(self.device)
         optimizer = self.training_job.optimizer(self.hyperparams, model)
 
-        for epoch in count():  # Counts up from 0 indefinitely
+        progress_bar = tqdm(
+            count(),  # Counts up from 0 indefinitely
+            unit=" epochs",
+            desc=f"Instance {self.hyperparams.instance_id} on device {self.device if self.device else 'cpu'} ",
+            position=self.process_num,
+            leave=False,
+        )
 
+        for epoch in progress_bar:
             # Check training stop condition
             if self.training_job.stop_condition(self.hyperparams, epoch, metrics.stored_metrics):
                 return
@@ -72,13 +81,13 @@ class InstanceRunner:
                 X = X.to(self.device)
                 y = y.to(self.device)
                 optimizer.zero_grad()
-                loss, y_pred = self.training_job.train_step(self.hyperparams, model, (X, y))
-                loss.backward()
+                train_loss, y_pred = self.training_job.train_step(self.hyperparams, model, (X, y))
+                train_loss.backward()
                 optimizer.step()
 
-                callbacks.run_callbacks(model, epoch, i, X, y, y_pred, loss, False)
+                callbacks.run_callbacks(model, epoch, i, X, y, y_pred, train_loss, False)
 
-            callbacks.run_callbacks(model, epoch, None, X, y, y_pred, loss, False)
+            callbacks.run_callbacks(model, epoch, None, X, y, y_pred, train_loss, False)
 
             # Validation phase
             for i, (X, y) in enumerate(val_loader):
@@ -86,9 +95,18 @@ class InstanceRunner:
                 y = y.to(self.device)
                 with t.no_grad():
                     # TODO: don't throw away all the val data maybe??
-                    loss, y_pred = self.training_job.validation_step(self.hyperparams, model, (X, y))
+                    val_loss, y_pred = self.training_job.validation_step(self.hyperparams, model, (X, y))
 
-            callbacks.run_callbacks(model, epoch, None, X, y, y_pred, loss, True)
+            callbacks.run_callbacks(model, epoch, None, X, y, y_pred, val_loss, True)
+
+            postfix = {"train_loss": train_loss.item(), "val_loss": val_loss.item()}
+            if t.cuda.is_available():
+                postfix = {
+                    **postfix,
+                    "gpu memory usage (GiB)": t.cuda.memory_allocated(self.device) / 2**30,
+                    "gpu utilization %": t.cuda.utilization(self.device),
+                }
+            progress_bar.set_postfix(postfix)
 
 
 class Callbacks:

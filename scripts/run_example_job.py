@@ -6,7 +6,7 @@ if __name__ == "__main__":
     settings = TrainingJobSettings(
         job_type="ExampleTrainingJob",
         job_description="Example training job for demo and testing purposes",
-        n_instance_repeats=2,
+        n_instance_repeats=5,
         save_parameters_every=(1, 250),
         save_metrics_every=(1, 250),
     )
